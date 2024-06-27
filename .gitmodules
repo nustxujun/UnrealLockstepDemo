@@ -1,0 +1,6 @@
+[submodule "Plugins/Rp3dPlugin"]
+	path = Plugins/Rp3dPlugin
+	url = git@github.com:nustxujun/UnrealReactPhysics3D.git
+[submodule "Plugins/LockstepPlugin"]
+	path = Plugins/LockstepPlugin
+	url = git@github.com:nustxujun/Arx.git
