@@ -6,13 +6,14 @@
 #include "GameFramework/GameModeBase.h"
 #include "DemoGameMode.generated.h"
 
-UCLASS(minimalapi)
+UCLASS(minimalapi, Blueprintable, BlueprintType)
 class ADemoGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
 	ADemoGameMode();
+
 };
 
 

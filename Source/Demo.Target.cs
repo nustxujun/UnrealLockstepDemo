@@ -7,7 +7,7 @@ public class DemoTarget : TargetRules
 {
 	public DemoTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Game;
+		Type = TargetType.Client;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("Demo");
 	}
