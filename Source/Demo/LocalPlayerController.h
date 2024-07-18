@@ -41,7 +41,5 @@ public:
     bool bSetPawn = true;
 
 private:
-	UPROPERTY()
-	class UArxConnectorComponent* Connector;
 
 };
