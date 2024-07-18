@@ -1,5 +1,4 @@
 #include "LocalPlayerController.h"
-#include "ArxConnectorComponent.h"
 
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
