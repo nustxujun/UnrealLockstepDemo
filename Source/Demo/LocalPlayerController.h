@@ -1,5 +1,7 @@
 #pragma once 
 #include "CoreMinimal.h"
+#include "Network/Connection.h"
+#include "Network/NetChannel.h"
 
 #include "LocalPlayerController.generated.h"
 
@@ -10,10 +12,36 @@ class ALocalPlayerController : public APlayerController
 	GENERATED_UCLASS_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable,Category = Pawn, meta = (Keywords = "set controller"))
-	virtual void PossessLocal(APawn* InPawn) ; // DEPRECATED(4.22, "Possess is marked virtual final as you should now be overriding OnPossess instead")
+
+    void BeginPlay() override;
+    void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void Tick(float DeltaTime) override;
+
+    UFUNCTION(Client, Reliable)
+        void ResponseRegister(uint32 Id);
+
+    UFUNCTION(Server, Reliable)
+        void RequestRegister();
+
+    void OnConnectServerSide(TSharedPtr<class FConnection> Conn);
+    void OnConnectClientSide(TSharedPtr<class FConnection> Conn);
+
+
+    bool IsStandAlone();
+    bool IsServer();
+
+    TSharedPtr<class ArxPlayerChannel> Player;
+    FNetChannel Channel;
+    TArray<FMessage> MsgQueue;
+
+
+    static FSocket* ServerSocket;
+
+
+    bool bSetPawn = true;
 
 private:
 	UPROPERTY()
 	class UArxConnectorComponent* Connector;
+
 };

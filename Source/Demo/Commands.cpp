@@ -2,10 +2,7 @@
 
 #include "ArxWorld.h"
 #include "ArxCharacter.h"
-#include "ArxRenderActor.h"
-#include "ArxRenderActorSubsystem.h"
 
-#pragma optimize("",off)
 
 void CreateRoleCommand::Serialize(ArxSerializer& Serializer)
 {
@@ -27,18 +24,12 @@ void CreateRoleCommand::Execute(ArxEntity& Ent, ArxPlayerId PlayerId)
 
 }
 
-#pragma optimize("",on)
 
+void KeyboardCommand::Execute(ArxEntity& Ent, ArxPlayerId)
+{
+	check(Ent.GetClassName() == ArxCharacter::GetTypeName());
 
-#include "Rp3dSystem.h"
+	auto& Chara = static_cast<ArxCharacter&>(Ent);
 
-#pragma optimize("",off)
-auto test = []() {
-	FWorldDelegates::OnPreWorldInitialization.AddLambda([](auto World, auto) {
-		FRp3dWorldSettings Settings;
-		Settings.bAutoUpdate = false;
-		URp3dSystem::Get().CreateWorld(World, Settings);
-		});
-	return 0;
-}();
-#pragma optimize("",on)
+	//Chara.Move({1,0,0});
+}

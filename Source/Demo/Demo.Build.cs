@@ -8,6 +8,6 @@ public class Demo : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay","ArxGamePlay", "ArxRuntime", "Rp3dRuntime","Sockets" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay","ArxGamePlay", "ArxRuntime", "Rp3dRuntime","Sockets","Slate" });
 	}
 }
