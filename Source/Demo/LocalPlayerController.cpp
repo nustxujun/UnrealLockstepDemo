@@ -395,7 +395,7 @@ void ALocalPlayerController::ResponseRegister_Implementation(uint32 Id)
 
 
 	AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-		auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.7"), Port, 10.0f, TEXT("Client"));
+		auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.1"), Port, 10.0f, TEXT("Client"));
 		AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
 			if (Self.IsValid() && !Self->IsPendingKill())
 			{
@@ -442,6 +442,7 @@ void ALocalPlayerController::RequestRegister_Implementation()
 	}
 
 	AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<ALocalPlayerController>(this)]() {
+		
 		auto Conn = FConnection::AcceptConnection(ServerSocket, 10.0f);
 		check(Conn);
 		AsyncTask(ENamedThreads::GameThread, [Self, Conn]() {
