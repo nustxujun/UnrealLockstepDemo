@@ -40,7 +40,7 @@ void SerializeMsg(FMessage& Msg)
 {
 }
 
-#define PREPARE_MSG(Id, ...) FMessage Msg; Msg.SetId(EMsgType::##Id); SerializeMsg(Msg, __VA_ARGS__); Controller->MsgQueue.Add(MoveTemp(Msg));
+#define PREPARE_MSG(Id, ...) FMessage Msg; Msg.SetId(EMsgType::Id); SerializeMsg(Msg, ##__VA_ARGS__); Controller->MsgQueue.Add(MoveTemp(Msg));
 
 struct ClientPlayer : public ArxClientPlayer
 {
