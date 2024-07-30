@@ -17,12 +17,6 @@ public:
     void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void Tick(float DeltaTime) override;
 
-    UFUNCTION(Client, Reliable)
-        void ResponseRegister(uint32 Id);
-
-    UFUNCTION(Server, Reliable)
-        void RequestRegister();
-
     void OnConnectServerSide(TSharedPtr<class FConnection> Conn);
     void OnConnectClientSide(TSharedPtr<class FConnection> Conn);
 
@@ -38,8 +32,7 @@ public:
     static FSocket* ServerSocket;
 
 
-    bool bSetPawn = true;
 
 private:
-
+    FDelegateHandle PlayerEvent;
 };

@@ -8,9 +8,9 @@
 #include "ArxTimerSystem.h"
 #include "ArxPlayer.h"
 #include "ArxServerSubsystem.h"
-#include "ArxPlayerController.h"
 #include "ArxCharacter.h"
 #include "ArxPhysicsSystem.h"
+#include "ArxRenderableSubsystem.h"
 
 #include "Rp3dWorld.h"
 
@@ -23,7 +23,8 @@ const static FString Dir = TEXT("G:\\snapshot");
 
 enum EMsgType
 {
-	Step = 1,
+	Register = 1,
+	Step ,
 	Command,
 	Snapshot,
 	VerifiedFrame,
@@ -42,15 +43,82 @@ void SerializeMsg(FMessage& Msg)
 
 #define PREPARE_MSG(Id, ...) FMessage Msg; Msg.SetId(EMsgType::Id); SerializeMsg(Msg, ##__VA_ARGS__); Controller->MsgQueue.Add(MoveTemp(Msg));
 
+
+class PlayerMgr : public ArxSystem, public ArxEntityRegister<PlayerMgr>, public ArxEventReceiver
+{
+	GENERATED_ARX_ENTITY_BODY()
+public:
+	TFunction<void(ArxPlayerId, APawn*)> OnCreatePlayer;
+
+	PlayerMgr(ArxWorld& InWorld, ArxEntityId Id):
+		ArxSystem(InWorld, Id)
+	{
+
+	}
+
+	void Initialize(bool bIsReplicated) override
+	{
+		GetWorld().RegisterServerEvent(ArxServerEvent::PLAYER_ENTER, GetId());
+		AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
+			ArxPlayerId PId = (ArxPlayerId)Param;
+
+			CreateCharacter(PId, ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
+
+			auto Actor = GetLinkedActor(PId);
+			auto Pawn = Cast<APawn>(Actor);
+			if (OnCreatePlayer)
+				OnCreatePlayer(PId, Pawn);
+		});
+	}
+
+	void Serialize(ArxSerializer& Serializer) override
+	{
+		ARX_SERIALIZE_MEMBER_FAST(EntityIds);
+	}
+
+	void OnEvent(ArxEntityId From, uint64 Event, uint64 Param) override
+	{
+		OnReceiveEvent(From, Event, Param);
+	}
+
+	void CreateCharacter(ArxPlayerId PId, FName EntityType, FString ClassPath)
+	{
+		auto Ent = GetWorld().CreateEntity(PId, EntityType);
+		auto Chara = static_cast<ArxCharacter*>(Ent);
+
+		Chara->CharacterBlueprint = ClassPath;
+
+		Chara->Spawn();
+		auto EId = EntityIds.FindRef(PId);
+		if (EId != 0)
+		{
+			GetWorld().DestroyEntity(EId);
+		}
+
+		EntityIds.Add(PId, Ent->GetId());
+	}
+
+	AActor* GetLinkedActor(ArxPlayerId PId)
+	{
+		auto EId = EntityIds.FindRef(PId);
+		if (EId == 0)
+			return nullptr;
+		auto Actor = GetWorld().GetUnrealWorld()->GetSubsystem<UArxRenderableSubsystem>()->GetActor(GetWorld().GetEntity(EId));
+		return Actor;
+	}
+
+
+private:
+	TSortedMap<ArxPlayerId, ArxEntityId> EntityIds;
+};
+
 struct ClientPlayer : public ArxClientPlayer
 {
 	ALocalPlayerController* Controller;
-	URp3dWorld* PhysicsWorld;
 	TBitArray<> RequestBits;
 	ClientPlayer(ALocalPlayerController* Ctrl) :
 		ArxClientPlayer(Ctrl->GetWorld(), ArxConstants::VerificationCycle), Controller(Ctrl)
 	{
-		PhysicsWorld = URp3dWorld::Get(Controller->GetWorld());
 
 		auto& FileMgr = IFileManager::Get();
 
@@ -66,29 +134,17 @@ struct ClientPlayer : public ArxClientPlayer
 		}
 	}
 
-	virtual void OnReceiveCommand(int FrameId, const TArray<uint8>& Cmd)
-	{
-		//auto Path = FString::Printf(TEXT("%s\\%d\\cmds.txt"), *Dir, GetPlayerId());
-		//std::fstream f(TCHAR_TO_ANSI(*Path), std::ios::binary | std::ios::app);
-		//f << FrameId << Count;
-		//f << Cmd.Num();
-		//f.write((char*)Cmd.GetData(), Cmd.Num());
-	}
-
-
-
-	virtual void OnFrame() override
-	{
-		//SCOPE_CYCLE_COUNTER(STAT_PhysicsWorldUpdate);
-		//PhysicsWorld->UpdatePhysics((reactphysics3d::decimal)ArxConstants::TimeStep);
-	}
-
 	virtual void OnRegister(ArxWorld& InWorld)override
 	{
 		InWorld.AddSystem<ArxTimerSystem>();
-		InWorld.AddSystem<ArxPlayerController>();
 		InWorld.AddSystem<ArxPhysicsSystem>();
+		InWorld.AddSystem<PlayerMgr>();
 
+		InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
+			if (PId != Controller->Player->GetPlayerId())
+				return;
+			Controller->Possess(Pawn);
+		};
 
 		auto& FileMgr = IFileManager::Get();
 		auto Path = FString::Printf(TEXT("%s\\%d"), *Dir, GetPlayerId());
@@ -102,13 +158,7 @@ struct ClientPlayer : public ArxClientPlayer
 		FileMgr.MakeDirectory(*Path, true);
 
 
-		InWorld.GetSystem<ArxPlayerController>().CreateCharacter(ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
-	}
-
-	virtual void SendHash(int FrameId, uint32 HashValue)
-	{
-		//Component->Channel.SendMessage()
-		//Component->SendHash(FrameId, HashValue);
+		//InWorld.GetSystem<ArxPlayerController>().CreateCharacter(ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
 	}
 
 	virtual void SendCommand(int FrameId, const TArray<uint8>& Command)override
@@ -138,7 +188,7 @@ struct ClientPlayer : public ArxClientPlayer
 	}
 	virtual void RequestRegister()override
 	{
-		Controller->RequestRegister();
+		PREPARE_MSG(Register);
 	}
 	virtual void RequestUnregister()override
 	{
@@ -147,7 +197,6 @@ struct ClientPlayer : public ArxClientPlayer
 
 	virtual void RequestSnapshot(int FrameId)
 	{
-		//Component->RequestSnapshot(FrameId);
 	}
 
 };
@@ -180,7 +229,7 @@ struct ServerPlayer : public ArxServerPlayer
 
 	virtual void ResponseRegister(ArxPlayerId Id)
 	{
-		Controller->ResponseRegister(Id);
+		PREPARE_MSG(Register, Id);
 	}
 
 	virtual void ResponseUnregister()
@@ -232,6 +281,19 @@ void ALocalPlayerController::BeginPlay()
 		Subsystem->Start((float)ArxConstants::TimeStep);
 #endif
 
+
+		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<ALocalPlayerController>(this)]() {
+
+			auto Conn = FConnection::AcceptConnection(ServerSocket, 10.0f);
+			check(Conn);
+			AsyncTask(ENamedThreads::GameThread, [Self, Conn]() {
+					if (Self.IsValid() && !Self->IsPendingKill())
+					{
+						Self->OnConnectServerSide(Conn);
+					}
+				});
+			});
+
 	}
 	else
 #endif
@@ -242,15 +304,23 @@ void ALocalPlayerController::BeginPlay()
 	else
 	{
 		Player = MakeShared<ClientPlayer>(this);
-		Player->RequestRegister();
 
+		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
+			auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.1"), Port, 10.0f, TEXT("Client"));
+			AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
+					if (Self.IsValid() && !Self->IsPendingKill())
+					{
+						OnConnectClientSide(Connection);
+						Player->RequestRegister();
+					}
+				});
+			});
 	}
-
-
 }
 
 void ALocalPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	PlayerEvent.Reset();
 	Super::EndPlay(EndPlayReason);
 #if WITH_SERVER_CODE
 	if (IsServer())
@@ -304,23 +374,6 @@ void ALocalPlayerController::Tick(float DeltaTime)
 	{
 		Player->Update();
 
-
-		if (!bSetPawn)
-		{
-			auto& World = ((ClientPlayer*)Player.Get())->GetWorld();
-			auto& ArxController = World.GetSystem<ArxPlayerController>();
-			auto Actor = ArxController.GetLinkedActor(Player->GetPlayerId());
-			if (Actor)
-			{
-				auto P = Cast<APawn>(Actor);
-				if (P)
-				{
-					bSetPawn = true;
-					Possess(P);
-				}
-			}
-		}
-
 	}
 
 	if (Channel.IsConnected())
@@ -343,7 +396,12 @@ void ALocalPlayerController::Tick(float DeltaTime)
 void ALocalPlayerController::OnConnectClientSide(TSharedPtr< FConnection> Conn)
 {
 	Channel.Connect(Conn);
-
+	Channel.RegisterRequestEvent(EMsgType::Register, [this](auto Msg)
+		{
+			ArxPlayerId PId;
+			Msg >> PId;
+			Player->ResponseRegister(PId);
+		});
 	Channel.RegisterRequestEvent(EMsgType::Step, [this](auto Msg)
 		{
 			int FrameId;
@@ -380,37 +438,18 @@ void ALocalPlayerController::OnConnectClientSide(TSharedPtr< FConnection> Conn)
 
 	Channel.RegisterRequestEvent(EMsgType::Start, [this](auto Msg)
 		{
-			bSetPawn = false;
 			Player->SyncStart();
 		});
 }
 
 
-void ALocalPlayerController::ResponseRegister_Implementation(uint32 Id)
-{
-	if (Player)
-	{
-		Player->ResponseRegister(Id);
-	}
-
-
-	AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-		auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.1"), Port, 10.0f, TEXT("Client"));
-		AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
-			if (Self.IsValid() && !Self->IsPendingKill())
-			{
-				OnConnectClientSide(Connection);
-			}
-			});
-		});
-
-
-}
-
 void ALocalPlayerController::OnConnectServerSide(TSharedPtr< FConnection> Conn)
 {
 	Channel.Accept(Conn);
-
+	Channel.RegisterRequestEvent(EMsgType::Register, [this](auto Msg)
+		{
+			Player->RequestRegister();
+		});
 	Channel.RegisterRequestEvent(EMsgType::Command, [this](auto Msg)
 		{
 			int FrameId;
@@ -431,27 +470,6 @@ void ALocalPlayerController::OnConnectServerSide(TSharedPtr< FConnection> Conn)
 			Player->SendSnapshot(FrameId, Snapshot);
 		});
 
-
-}
-
-void ALocalPlayerController::RequestRegister_Implementation()
-{
-	if (Player)
-	{
-		Player->RequestRegister();
-	}
-
-	AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<ALocalPlayerController>(this)]() {
-		
-		auto Conn = FConnection::AcceptConnection(ServerSocket, 10.0f);
-		check(Conn);
-		AsyncTask(ENamedThreads::GameThread, [Self, Conn]() {
-			if (Self.IsValid() && !Self->IsPendingKill())
-			{
-				Self->OnConnectServerSide(Conn);
-			}
-			});
-		});
 
 }
 
