@@ -120,10 +120,6 @@ struct ClientPlayer : public ArxClientPlayer
 		ArxClientPlayer(Ctrl->GetWorld(), ArxConstants::VerificationCycle), Controller(Ctrl)
 	{
 
-		auto& FileMgr = IFileManager::Get();
-
-
-		FileMgr.MakeDirectory(*Dir, true);
 	}
 
 	void Update() override
@@ -145,18 +141,6 @@ struct ClientPlayer : public ArxClientPlayer
 				return;
 			Controller->Possess(Pawn);
 		};
-
-		auto& FileMgr = IFileManager::Get();
-		auto Path = FString::Printf(TEXT("%s\\%d"), *Dir, GetPlayerId());
-
-		if (FileMgr.DirectoryExists(*Path))
-		{
-			FileMgr.Move(*(Path + "_backup"), *Path);
-			FileMgr.DeleteDirectory(*(Path + "_backup"), false, true);
-		}
-
-		FileMgr.MakeDirectory(*Path, true);
-
 
 		//InWorld.GetSystem<ArxPlayerController>().CreateCharacter(ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
 	}
@@ -277,9 +261,7 @@ void ALocalPlayerController::BeginPlay()
 
 		Player = MakeShared<ServerPlayer>(this);
 		auto Subsystem = GetWorld()->GetSubsystem<UArxServerSubsystem>();
-#if WITH_EDITOR
 		Subsystem->Start((float)ArxConstants::TimeStep);
-#endif
 
 
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<ALocalPlayerController>(this)]() {
