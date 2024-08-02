@@ -265,7 +265,7 @@ void ALocalPlayerController::BeginPlay()
 
 
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<ALocalPlayerController>(this)]() {
-
+			FPlatformProcess::Sleep(3.0f);
 			auto Conn = FConnection::AcceptConnection(ServerSocket, 10.0f);
 			check(Conn);
 			AsyncTask(ENamedThreads::GameThread, [Self, Conn]() {
