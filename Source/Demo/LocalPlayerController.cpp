@@ -8,7 +8,6 @@
 #include "ArxTimerSystem.h"
 #include "ArxPlayer.h"
 #include "ArxServerSubsystem.h"
-#include "ArxCharacter.h"
 #include "ArxPhysicsSystem.h"
 #include "ArxRenderableSubsystem.h"
 
