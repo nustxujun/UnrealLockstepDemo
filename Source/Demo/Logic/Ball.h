@@ -38,7 +38,7 @@ public:
 		virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 		URp3dRigidBody* RigidBody = nullptr;
 		TSharedPtr<Rp3dCollisionShape> CollisionShape ;
-		FString FGCObject::GetReferencerName()const{return TEXT("PhysicsBall"); }
+		FString GetReferencerName()const{return TEXT("PhysicsBall"); }
     };
 
     PhysicsWrapper Wrapper;
