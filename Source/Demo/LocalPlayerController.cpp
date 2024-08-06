@@ -14,6 +14,8 @@
 
 #include "Rp3dWorld.h"
 
+#include "Logic/Ball.h"
+
 DECLARE_CYCLE_STAT(TEXT("World Update"), STAT_WorldUpdate, STATGROUP_ArxGroup);
 DECLARE_CYCLE_STAT(TEXT("Physics World Update"), STAT_PhysicsWorldUpdate, STATGROUP_ArxGroup);
 
@@ -62,7 +64,7 @@ public:
 		AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
 			ArxPlayerId PId = (ArxPlayerId)Param;
 
-			CreateCharacter(PId, ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
+			CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
 
 			auto Actor = GetLinkedActor(PId);
 			auto Pawn = Cast<APawn>(Actor);
@@ -84,7 +86,7 @@ public:
 	void CreateCharacter(ArxPlayerId PId, FName EntityType, FString ClassPath)
 	{
 		auto Ent = GetWorld().CreateEntity(PId, EntityType);
-		auto Chara = static_cast<ArxCharacter*>(Ent);
+		auto Chara = static_cast<Ball*>(Ent);
 
 		Chara->CharacterBlueprint = ClassPath;
 
@@ -142,7 +144,7 @@ struct ClientPlayer : public ArxClientPlayer
 			Controller->Possess(Pawn);
 		};
 
-		//InWorld.GetSystem<ArxPlayerController>().CreateCharacter(ArxTypeName<ArxCharacter>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
+
 	}
 
 	virtual void SendCommand(int FrameId, const TArray<uint8>& Command)override
@@ -269,7 +271,7 @@ void ALocalPlayerController::BeginPlay()
 			auto Conn = FConnection::AcceptConnection(ServerSocket, 10.0f);
 			check(Conn);
 			AsyncTask(ENamedThreads::GameThread, [Self, Conn]() {
-					if (Self.IsValid() && !Self->IsPendingKill())
+					if (Self.IsValid() )
 					{
 						Self->OnConnectServerSide(Conn);
 					}
@@ -290,7 +292,7 @@ void ALocalPlayerController::BeginPlay()
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
 			auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.1"), Port, 10.0f, TEXT("Client"));
 			AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
-					if (Self.IsValid() && !Self->IsPendingKill())
+					if (Self.IsValid() )
 					{
 						OnConnectClientSide(Connection);
 						Player->RequestRegister();

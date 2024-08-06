@@ -8,7 +8,8 @@ public class DemoServerTarget : TargetRules
 	public DemoServerTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Server;
-		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.Add("Demo");
+		DefaultBuildSettings = BuildSettingsVersion.Latest;
+
+        ExtraModuleNames.Add("Demo");
 	}
 }
