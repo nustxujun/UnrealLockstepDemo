@@ -8,10 +8,6 @@ FSocket* FConnection::CreateListenSocket(int32 Port,const TCHAR* SocketDebugName
 	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get();
 	TSharedPtr<FInternetAddr> OutAddr = SocketSubsystem->GetLocalBindAddr(*GLog);
 
-	// REMOTEMPCOOKTODO: Calculate ConnectAuthorityAddr from the proper element of GetLocalAdapterAddresses
-	// rather than hardcoding to 127.0.0.1
-	TSharedPtr<FInternetAddr> ConnectAuthorityAddr = SocketSubsystem->GetAddressFromString(TEXT("127.0.0.1"));
-
 	OutAddr->SetPort(Port);
 	FSocket* LocalSocket = SocketSubsystem->CreateSocket(NAME_Stream, SocketDebugName, OutAddr->GetProtocolType());
 
@@ -29,8 +25,6 @@ FSocket* FConnection::CreateListenSocket(int32 Port,const TCHAR* SocketDebugName
 	checkf(Ret, TEXT("%s"), *FString::Printf(TEXT("Failed to listen to socket %s"), *OutAddr->ToString(true /* bAppendPort */)));
 
 	OutAddr->SetPort(Port);
-	ConnectAuthorityAddr->SetPort(Port);
-	//OutConnectAuthority = ConnectAuthorityAddr->ToString(true /* bAppendPort */);
 
 	return LocalSocket;
 }
