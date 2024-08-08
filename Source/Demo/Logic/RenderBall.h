@@ -42,8 +42,10 @@ public:
 	void LookUpAtRate(float Rate);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 private:
+	void Move();
+private:
+	float Dirs[2] = {};
     Rp3dTransform CachedTrans;
 	Rp3dVector3 MoveForwardValue = {};
 	Rp3dVector3 MoveRightValue = {};

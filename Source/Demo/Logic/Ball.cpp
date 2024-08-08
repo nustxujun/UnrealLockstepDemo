@@ -125,14 +125,15 @@ void Ball::Update()
 	auto Vel = Wrapper.RigidBody->GetLinearVelocity();
 	Vel.z = 0;
 
-	const reactphysics3d::decimal DampingRate = 0.5f;
+	const reactphysics3d::decimal DampingRate = 1.0f;
 	Vel *= -DampingRate;
 	auto Damping = Vel * Wrapper.RigidBody->GetMass() / reactphysics3d::decimal(ArxConstants::TimeStep) ;
 		
-	const reactphysics3d::decimal ForcePower = 5000;
+	const reactphysics3d::decimal TargetVel = 1000;
+	const auto ForcePower = TargetVel * Wrapper.RigidBody->GetMass() / reactphysics3d::decimal(ArxConstants::TimeStep);
 
 	Wrapper.RigidBody->ResetForce();
-	Wrapper.RigidBody->ApplyForceAtCenterOfMass(Direction * ForcePower + Damping);
+	Wrapper.RigidBody->ApplyForceAtCenterOfMass(Force + Damping);
 }
 
 const Rp3dTransform& Ball::GetTransform()const
@@ -140,13 +141,13 @@ const Rp3dTransform& Ball::GetTransform()const
 	return Wrapper.RigidBody->GetTransform();
 }
 
-void Ball::MoveDirectly(const Rp3dVector3& Dir)
+void Ball::MoveDirectly(const Rp3dVector3& Val)
 {
-	Direction = Dir;
+	Force = Val;
 }
 
-void Ball::Move_Internal(ArxPlayerId PId, const Rp3dVector3& Dir)
+void Ball::Move_Internal(ArxPlayerId PId, const Rp3dVector3& Val)
 {
-	MoveDirectly(Dir);
+	MoveDirectly(Val);
 }
 

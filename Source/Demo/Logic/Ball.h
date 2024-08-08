@@ -19,8 +19,8 @@ public:
 	void OnEvent(ArxEntityId Sender, uint64 Type, uint64 Param) override;
 	void Update();
 
-	void MoveDirectly(const Rp3dVector3& Dir);
-	EXPOSED_ENTITY_METHOD(Move, const Rp3dVector3& Dir)
+	void MoveDirectly(const Rp3dVector3& Val);
+	EXPOSED_ENTITY_METHOD(Move, const Rp3dVector3& Val)
 
 
 	const Rp3dTransform& GetTransform()const;
@@ -29,7 +29,7 @@ public:
 	REFLECT_BEGIN()
 	REFLECT_FIELD(int, Timer)
 	REFLECT_FIELD(FString, CharacterBlueprint)
-	REFLECT_FIELD(Rp3dVector3, Direction)
+	REFLECT_FIELD(Rp3dVector3, Force)
 	REFLECT_END()
 
 public:

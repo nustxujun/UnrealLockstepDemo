@@ -110,24 +110,27 @@ void ARenderBall::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
+void ARenderBall::Move()
+{
+	const FRotator Rotation = Controller->GetControlRotation();
+	const FRotator YawRotation(0, Rotation.Yaw, 0);
+	const FVector Fwd = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector Rwd = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	auto Vel = UE_TO_RP3D((Fwd * Dirs[0] + Rwd * Dirs[1]) * 5000);
+
+	auto Ent = static_cast<Ball*>(GetEntity());
+	Ent->Move(Vel);
+}
+
 void ARenderBall::MoveForward(float Value)
 {
 	if ((Controller != nullptr) )
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		//AddMovementInput(Direction, Value);
-
-		auto Fwd = UE_TO_RP3D(Direction * Value );
-		if (MoveForwardValue != Fwd)
+		if (Dirs[0] != Value)
 		{
-			MoveForwardValue = Fwd;
-			auto Ent = static_cast<Ball*>(GetEntity());
-			Ent->Move(MoveForwardValue);
+			Dirs[0] = Value;
+			Move();
 		}
 	}
 }
@@ -136,21 +139,11 @@ void ARenderBall::MoveRight(float Value)
 {
 	if ((Controller != nullptr))
 	{
-		// find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get right vector 
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		// add movement in that direction
-		//AddMovementInput(Direction, Value);
-
-		auto Rgt = UE_TO_RP3D(Direction * Value );
-		if (MoveRightValue != Rgt)
+		if (Dirs[1] != Value)
 		{
-			MoveRightValue = Rgt;
-			auto Ent = static_cast<Ball*>(GetEntity());
-			Ent->Move(Rgt);
+			Dirs[1] = Value;
+			Move();
 		}
 	}
 }
