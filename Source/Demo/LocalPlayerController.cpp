@@ -286,10 +286,12 @@ void ALocalPlayerController::BeginPlay()
 	}
 	else
 	{
+		
+
 		Player = MakeShared<ClientPlayer>(this);
 
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-			auto Connection = FConnection::ConnectToHost(TEXT("127.0.0.1"), Port, 10.0f, TEXT("Client"));
+			auto Connection = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
 			AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
 					if (Self.IsValid() )
 					{

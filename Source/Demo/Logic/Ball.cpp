@@ -33,7 +33,7 @@ void Ball::Initialize(bool bIsReplicated)
 	Wrapper.RigidBody = PhysicsSys.CreateRigidBody();
 	auto Collider = Wrapper.RigidBody->AddCollisionShape(Wrapper.CollisionShape);
 	Collider.SetBounciness(0.5);
-	Collider.SetFriction(1);
+	Collider.SetFriction(0.1);
 
 	Wrapper.RigidBody->UpdateMassPropertiesFromColliders();
 	Wrapper.RigidBody->SetIsDebugEnabled(true);
