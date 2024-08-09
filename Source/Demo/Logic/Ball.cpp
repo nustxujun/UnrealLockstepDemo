@@ -25,7 +25,6 @@ void Ball::Initialize(bool bIsReplicated)
 	FWorldContext* WorldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport);
 	auto UnrealWorld = WorldContext->World();
 
-	//Wrapper.CollisionShape = URp3dCollisionShape::CreateCapsuleShape(50,100);
 	Wrapper.CollisionShape = Rp3dCollisionShape::CreateSphereShape(55);
 
 
@@ -36,7 +35,7 @@ void Ball::Initialize(bool bIsReplicated)
 	Collider.SetFriction(0.1);
 
 	Wrapper.RigidBody->UpdateMassPropertiesFromColliders();
-	Wrapper.RigidBody->SetIsDebugEnabled(true);
+	//Wrapper.RigidBody->SetIsDebugEnabled(true);
 
 
 	auto Pos = FVector(-290.000000, -180.000000, 454.645386 + GetId() * 200 - 300);
@@ -88,25 +87,28 @@ void Ball::Spawn()
 
 void Ball::Serialize(ArxSerializer& Serializer)
 {
+	Rp3dTransform Trans;
+	Rp3dVector3 LVel, AVel;
+
 	if (Serializer.IsSaving())
 	{
-		Rp3dTransform Trans = Wrapper.RigidBody->GetTransform();
-		auto LinearVel = Wrapper.RigidBody->GetLinearVelocity();
-		auto AngularVel = Wrapper.RigidBody->GetAngularVelocity();
-		ARX_SERIALIZE_MEMBER_FAST(Trans);
-		ARX_SERIALIZE_MEMBER_FAST(LinearVel);
-		ARX_SERIALIZE_MEMBER_FAST(AngularVel);
+		Trans = Wrapper.RigidBody->GetTransform();
+		LVel = Wrapper.RigidBody->GetLinearVelocity();
+		AVel = Wrapper.RigidBody->GetAngularVelocity();
+
 	}
-	else
+
+
+	ARX_SERIALIZE_MEMBER_FAST(Trans);
+	ARX_SERIALIZE_MEMBER_FAST(LVel);
+	ARX_SERIALIZE_MEMBER_FAST(AVel);
+
+	if (!Serializer.IsSaving())
 	{
-		Rp3dTransform Trans;
-		Rp3dVector3 LVel, AVel;
-		Serializer << Trans << LVel << AVel;
 		Wrapper.RigidBody->SetTransform(Trans);
 		Wrapper.RigidBody->SetLinearVelocity(LVel);
 		Wrapper.RigidBody->SetAngularVelocity(AVel);
 	}
-
 
 	ARX_ENTITY_SERIALIZE_IMPL(Serializer);
 }
@@ -122,6 +124,8 @@ void Ball::OnEvent(ArxEntityId Sender, uint64 Type, uint64 Param)
 
 void Ball::Update()
 {
+	if (!bDamping)
+		return;
 	auto Vel = Wrapper.RigidBody->GetLinearVelocity();
 	Vel.z = 0;
 

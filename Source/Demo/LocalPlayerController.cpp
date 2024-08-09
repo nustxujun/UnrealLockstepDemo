@@ -63,13 +63,25 @@ public:
 		AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
 			ArxPlayerId PId = (ArxPlayerId)Param;
 
-			CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/ThirdPersonCPP/Blueprints/RenderCharacter.RenderCharacter_C")));
+			CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C")));
 
 			auto Actor = GetLinkedActor(PId);
 			auto Pawn = Cast<APawn>(Actor);
 			if (OnCreatePlayer)
 				OnCreatePlayer(PId, Pawn);
 		});
+
+		if (!bIsReplicated)
+		{
+			const int Count = 100;
+			for (int i = 0; i < Count; ++i)
+			{ 
+				auto B = GetWorld().CreateEntity<Ball>(NON_PLAYER_CONTROL);
+				B->CharacterBlueprint = TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C");
+				B->Spawn();
+
+			}
+		}
 	}
 
 	void Serialize(ArxSerializer& Serializer) override
@@ -86,7 +98,7 @@ public:
 	{
 		auto Ent = GetWorld().CreateEntity(PId, EntityType);
 		auto Chara = static_cast<Ball*>(Ent);
-
+		Chara->bDamping = true;
 		Chara->CharacterBlueprint = ClassPath;
 
 		Chara->Spawn();

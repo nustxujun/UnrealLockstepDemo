@@ -30,6 +30,8 @@ public:
 	REFLECT_FIELD(int, Timer)
 	REFLECT_FIELD(FString, CharacterBlueprint)
 	REFLECT_FIELD(Rp3dVector3, Force)
+	REFLECT_FIELD(bool, bDamping)
+
 	REFLECT_END()
 
 public:
