@@ -131,10 +131,10 @@ void Ball::Update()
 
 	const reactphysics3d::decimal DampingRate = 1.0f;
 	Vel *= -DampingRate;
-	auto Damping = Vel * Wrapper.RigidBody->GetMass() / reactphysics3d::decimal(ArxConstants::TimeStep) ;
+	auto Damping = Vel * Wrapper.RigidBody->GetMass() / FPToRp3d(ArxConstants::TimeStep) ;
 		
 	const reactphysics3d::decimal TargetVel = 1000;
-	const auto ForcePower = TargetVel * Wrapper.RigidBody->GetMass() / reactphysics3d::decimal(ArxConstants::TimeStep);
+	const auto ForcePower = TargetVel * Wrapper.RigidBody->GetMass() / FPToRp3d(ArxConstants::TimeStep);
 
 	Wrapper.RigidBody->ResetForce();
 	Wrapper.RigidBody->ApplyForceAtCenterOfMass(Force + Damping);

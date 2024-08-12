@@ -145,7 +145,6 @@ struct ClientPlayer : public ArxClientPlayer
 
 	virtual void OnRegister(ArxWorld& InWorld)override
 	{
-		InWorld.AddSystem<ArxTimerSystem>();
 		InWorld.AddSystem<ArxPhysicsSystem>();
 		InWorld.AddSystem<PlayerMgr>();
 
