@@ -47,20 +47,10 @@ ARenderBall::ARenderBall(const FObjectInitializer& ObjectInitializer)
 	SmoothComponent= CreateDefaultSubobject<UArxSmoothMoveComponent>(TEXT("SmoothMoveComponent"));
 }
 
-void ARenderBall::LinkEntity(ArxEntity* Ent)
-{
-	IArxRenderable::LinkEntity(Ent);
-}
 
-void ARenderBall::UnlinkEntity()
+void ARenderBall::OnFrame_Async(int FrameId)
 {
-	IArxRenderable::UnlinkEntity();
-
-}
-
-void ARenderBall::OnFrame(int FrameId)
-{
-	auto Ent = GetEntity();
+	auto Ent = GetArxWorld().GetEntity(GetEntityId());
 	if (!Ent)
 		return;
 	check(Ent);
@@ -119,8 +109,11 @@ void ARenderBall::Move()
 
 	auto Vel = UE_TO_RP3D((Fwd * Dirs[0] + Rwd * Dirs[1]) * 5000);
 
-	auto Ent = static_cast<Ball*>(GetEntity());
-	Ent->Move(Vel);
+	//auto Ent = static_cast<Ball*>(GetEntity());
+	//Ent->Move(Vel);
+
+	Ball::Move_Async(GetArxWorld(), GetEntityId(), Vel);
+
 }
 
 void ARenderBall::MoveForward(float Value)
@@ -146,4 +139,9 @@ void ARenderBall::MoveRight(float Value)
 			Move();
 		}
 	}
+}
+
+void ARenderBall::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
 }

@@ -1,7 +1,7 @@
 #include "Ball.h"
 #include "ArxWorld.h"
 #include "ArxTimerSystem.h"
-#include "ArxRenderableSubsystem.h"
+#include "ArxRenderableSystem.h"
 #include "ArxPhysicsSystem.h"
 
 #include "Rp3dRigidBody.h"
@@ -71,18 +71,13 @@ void Ball::Uninitialize(bool bIsReplicated)
 
 	Wrapper.CollisionShape.Reset();
 
-	UArxRenderableSubsystem::Get(GetWorld().GetUnrealWorld()).Unlink(this);
-
+	GetWorld().GetSystem<ArxRenderableSystem>().Unlink(GetId());
 }
 
 
 void Ball::Spawn()
 {
-	auto Class = LoadObject<UClass>(nullptr, *CharacterBlueprint);
-	//auto Blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), NULL, *CharacterBlueprint));
-	check(Class);
-	if (Class)
-		UArxRenderableSubsystem::Get(GetWorld().GetUnrealWorld()).Link(this, Class);
+	GetWorld().GetSystem<ArxRenderableSystem>().Link(GetId(), CharacterBlueprint);
 }
 
 void Ball::Serialize(ArxSerializer& Serializer)

@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "Network/Connection.h"
 #include "Network/NetChannel.h"
-
+#include <atomic>
 #include "LocalPlayerController.generated.h"
 
 
@@ -31,8 +31,9 @@ public:
 
     static FSocket* ServerSocket;
 
+    FEvent* bEndThread = nullptr;
 
+    std::atomic_bool bRunning;
 
 private:
-    FDelegateHandle PlayerEvent;
 };

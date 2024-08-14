@@ -9,14 +9,13 @@
 #include "ArxPlayer.h"
 #include "ArxServerSubsystem.h"
 #include "ArxPhysicsSystem.h"
-#include "ArxRenderableSubsystem.h"
+#include "ArxRenderableSystem.h"
 
 #include "Rp3dWorld.h"
 
 #include "Logic/Ball.h"
 
-DECLARE_CYCLE_STAT(TEXT("World Update"), STAT_WorldUpdate, STATGROUP_ArxGroup);
-DECLARE_CYCLE_STAT(TEXT("Physics World Update"), STAT_PhysicsWorldUpdate, STATGROUP_ArxGroup);
+
 
 #include <fstream>
 const static FString Dir = TEXT("G:\\snapshot");
@@ -42,7 +41,7 @@ void SerializeMsg(FMessage& Msg)
 {
 }
 
-#define PREPARE_MSG(Id, ...) FMessage Msg; Msg.SetId(EMsgType::Id); SerializeMsg(Msg, ##__VA_ARGS__); Controller->MsgQueue.Add(MoveTemp(Msg));
+#define PREPARE_MSG(Id, ...) FMessage Msg; Msg.SetId(EMsgType::Id); SerializeMsg(Msg, ##__VA_ARGS__); Channel.SendMessage(MoveTemp(Msg));
 
 
 class PlayerMgr : public ArxSystem, public ArxEntityRegister<PlayerMgr>, public ArxEventReceiver
@@ -60,16 +59,16 @@ public:
 	void Initialize(bool bIsReplicated) override
 	{
 		GetWorld().RegisterServerEvent(ArxServerEvent::PLAYER_ENTER, GetId());
-		AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
-			ArxPlayerId PId = (ArxPlayerId)Param;
+		//AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
+		//	ArxPlayerId PId = (ArxPlayerId)Param;
 
-			CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C")));
+		//	CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C")));
 
-			auto Actor = GetLinkedActor(PId);
-			auto Pawn = Cast<APawn>(Actor);
-			if (OnCreatePlayer)
-				OnCreatePlayer(PId, Pawn);
-		});
+		//	auto Actor = GetLinkedActor(PId);
+		//	auto Pawn = Cast<APawn>(Actor);
+		//	if (OnCreatePlayer)
+		//		OnCreatePlayer(PId, Pawn);
+		//});
 
 		if (!bIsReplicated)
 		{
@@ -111,12 +110,12 @@ public:
 		EntityIds.Add(PId, Ent->GetId());
 	}
 
-	AActor* GetLinkedActor(ArxPlayerId PId)
+	TWeakObjectPtr<AActor> GetLinkedActor(ArxPlayerId PId)
 	{
 		auto EId = EntityIds.FindRef(PId);
 		if (EId == 0)
 			return nullptr;
-		auto Actor = GetWorld().GetUnrealWorld()->GetSubsystem<UArxRenderableSubsystem>()->GetActor(GetWorld().GetEntity(EId));
+		auto Actor = GetWorld().GetSystem<ArxRenderableSystem>().GetActor(EId);
 		return Actor;
 	}
 
@@ -128,9 +127,10 @@ private:
 struct ClientPlayer : public ArxClientPlayer
 {
 	ALocalPlayerController* Controller;
+	FNetChannel& Channel;
 	TBitArray<> RequestBits;
-	ClientPlayer(ALocalPlayerController* Ctrl) :
-		ArxClientPlayer(Ctrl->GetWorld(), ArxConstants::VerificationCycle), Controller(Ctrl)
+	ClientPlayer(ALocalPlayerController* Ctrl, FNetChannel& InChannel) :
+		ArxClientPlayer(Ctrl->GetWorld(), ArxConstants::VerificationCycle), Controller(Ctrl), Channel(InChannel)
 	{
 
 	}
@@ -138,7 +138,6 @@ struct ClientPlayer : public ArxClientPlayer
 	void Update() override
 	{
 		{
-			SCOPE_CYCLE_COUNTER(STAT_WorldUpdate);
 			ArxClientPlayer::Update();
 		}
 	}
@@ -146,6 +145,7 @@ struct ClientPlayer : public ArxClientPlayer
 	virtual void OnRegister(ArxWorld& InWorld)override
 	{
 		InWorld.AddSystem<ArxPhysicsSystem>();
+		InWorld.AddSystem<ArxRenderableSystem>();
 		InWorld.AddSystem<PlayerMgr>();
 
 		InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
@@ -201,9 +201,9 @@ struct ClientPlayer : public ArxClientPlayer
 struct ServerPlayer : public ArxServerPlayer
 {
 	ALocalPlayerController* Controller;
-
-	ServerPlayer(ALocalPlayerController* Ctrl)
-		:ArxServerPlayer(Ctrl->GetWorld()->GetSubsystem<UArxServerSubsystem>()), Controller(Ctrl)
+	FNetChannel& Channel;
+	ServerPlayer(ALocalPlayerController* Ctrl, FNetChannel& InChannel)
+		:ArxServerPlayer(Ctrl->GetWorld()->GetSubsystem<UArxServerSubsystem>()), Controller(Ctrl),Channel(InChannel)
 	{}
 
 	virtual void SyncStep(int FrameId)override
@@ -263,6 +263,10 @@ ALocalPlayerController::ALocalPlayerController(const FObjectInitializer& ObjectI
 void ALocalPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	// Disable killing actors outside of the world
+	AWorldSettings* WorldSettings = GetWorld()->GetWorldSettings(true);
+	WorldSettings->bEnableWorldBoundsChecks = false;
+
 #if WITH_SERVER_CODE
 	if (IsServer())
 	{
@@ -271,7 +275,8 @@ void ALocalPlayerController::BeginPlay()
 			ServerSocket = FConnection::CreateListenSocket(Port, TEXT("Server"));
 		}
 
-		Player = MakeShared<ServerPlayer>(this);
+		Player = MakeShared<ServerPlayer>(this, Channel);
+		Player->Initalize();
 		auto Subsystem = GetWorld()->GetSubsystem<UArxServerSubsystem>();
 		Subsystem->Start((float)ArxConstants::TimeStep);
 
@@ -297,26 +302,73 @@ void ALocalPlayerController::BeginPlay()
 	}
 	else
 	{
-		
 
-		Player = MakeShared<ClientPlayer>(this);
+		bRunning.store(true);
+		Player = MakeShared<ClientPlayer>(this,Channel);
+		Player->Initalize();
 
+
+		//bEndThread = FGenericPlatformProcess::GetSynchEventFromPool(false);
+		//AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
+		//	auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
+		//	if (!Conn)
+		//	{
+		//		bEndThread->Trigger();
+		//		return;
+		//	}
+		//	OnConnectClientSide(Conn);
+		//	Player->RequestRegister();
+
+		//	while(bRunning.load())
+		//	{
+		//		Player->Update();
+		//		Channel.Tick();
+		//		FPlatformProcess::SleepNoStats(0);
+		//	}
+
+		//	bEndThread->Trigger();
+
+		//});
+
+		//bEndThread = FGenericPlatformProcess::GetSynchEventFromPool(false);
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-			auto Connection = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
-			AsyncTask(ENamedThreads::GameThread, [Self, Connection, this]() {
-					if (Self.IsValid() )
-					{
-						OnConnectClientSide(Connection);
-						Player->RequestRegister();
-					}
-				});
+			auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
+			if (!Conn)
+			{
+				//bEndThread->Trigger();
+				return;
+			}
+
+			AsyncTask(ENamedThreads::GameThread, [this, Conn](){
+				OnConnectClientSide(Conn);
+				Player->RequestRegister();
+
+				//while (bRunning.load())
+				//{
+				//	Player->Update();
+				//	Channel.Tick();
+				//	FPlatformProcess::SleepNoStats(0);
+				//}
+
+				//bEndThread->Trigger();
 			});
+
+		});
+
 	}
 }
 
 void ALocalPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	PlayerEvent.Reset();
+	if (bEndThread)
+	{
+		bRunning.store(false);
+		bEndThread->Wait();
+		FPlatformProcess::ReturnSynchEventToPool(bEndThread);
+		bEndThread = nullptr;
+	}
+
+
 	Super::EndPlay(EndPlayReason);
 #if WITH_SERVER_CODE
 	if (IsServer())
@@ -365,24 +417,24 @@ void ALocalPlayerController::Tick(float DeltaTime)
 
 	if (IsServer())
 	{
+		Channel.Tick();
 	}
 	else if ( !IsServer())
 	{
 		Player->Update();
-
+		Channel.Tick();
 	}
 
-	if (Channel.IsConnected())
-	{
-		for (auto& Msg : MsgQueue)
-		{
-			Channel.SendMessage(MoveTemp(Msg));
-		}
+	//if (Channel.IsConnected())
+	//{
+	//	for (auto& Msg : MsgQueue)
+	//	{
+	//		Channel.SendMessage(MoveTemp(Msg));
+	//	}
 
-		MsgQueue.Reset();
-	}
+	//	MsgQueue.Reset();
+	//}
 
-	Channel.Tick();
 
 }
 

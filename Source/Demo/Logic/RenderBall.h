@@ -31,9 +31,8 @@ class ARenderBall : public ACharacter, public IArxRenderable
 	UPROPERTY()
 	class UArxSmoothMoveComponent* SmoothComponent;
 public: 
-    virtual void LinkEntity(ArxEntity* Entity) override;
-    virtual void UnlinkEntity() override;
-	virtual void OnFrame(int FrameId) override;
+	virtual void OnFrame_Async(int FrameId) override;
+	void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 
 	void MoveForward(float Value);
