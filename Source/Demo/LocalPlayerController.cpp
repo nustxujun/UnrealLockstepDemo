@@ -148,11 +148,11 @@ struct ClientPlayer : public ArxClientPlayer
 		InWorld.AddSystem<ArxRenderableSystem>();
 		InWorld.AddSystem<PlayerMgr>();
 
-		InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
-			if (PId != Controller->Player->GetPlayerId())
-				return;
-			Controller->Possess(Pawn);
-		};
+		//InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
+		//	if (PId != Controller->Player->GetPlayerId())
+		//		return;
+		//	Controller->Possess(Pawn);
+		//};
 
 
 	}
@@ -308,52 +308,43 @@ void ALocalPlayerController::BeginPlay()
 		Player->Initalize();
 
 
-		//bEndThread = FGenericPlatformProcess::GetSynchEventFromPool(false);
-		//AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-		//	auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
-		//	if (!Conn)
-		//	{
-		//		bEndThread->Trigger();
-		//		return;
-		//	}
-		//	OnConnectClientSide(Conn);
-		//	Player->RequestRegister();
-
-		//	while(bRunning.load())
-		//	{
-		//		Player->Update();
-		//		Channel.Tick();
-		//		FPlatformProcess::SleepNoStats(0);
-		//	}
-
-		//	bEndThread->Trigger();
-
-		//});
-
-		//bEndThread = FGenericPlatformProcess::GetSynchEventFromPool(false);
+		bEndThread = FGenericPlatformProcess::GetSynchEventFromPool(false);
 		AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
 			auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
 			if (!Conn)
 			{
-				//bEndThread->Trigger();
+				bEndThread->Trigger();
 				return;
 			}
+			OnConnectClientSide(Conn);
+			Player->RequestRegister();
 
-			AsyncTask(ENamedThreads::GameThread, [this, Conn](){
-				OnConnectClientSide(Conn);
-				Player->RequestRegister();
+			while(bRunning.load())
+			{
+				Player->Update();
+				Channel.Tick();
+				FPlatformProcess::SleepNoStats(0);
+			}
 
-				//while (bRunning.load())
-				//{
-				//	Player->Update();
-				//	Channel.Tick();
-				//	FPlatformProcess::SleepNoStats(0);
-				//}
-
-				//bEndThread->Trigger();
-			});
+			bEndThread->Trigger();
 
 		});
+
+		//AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
+		//	auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
+		//	if (!Conn)
+		//	{
+		//		return;
+		//	}
+
+		//	AsyncTask(ENamedThreads::GameThread, [this, Conn](){
+		//		OnConnectClientSide(Conn);
+		//		Player->RequestRegister();
+
+
+		//	});
+
+		//});
 
 	}
 }
@@ -421,8 +412,8 @@ void ALocalPlayerController::Tick(float DeltaTime)
 	}
 	else if ( !IsServer())
 	{
-		Player->Update();
-		Channel.Tick();
+		//Player->Update();
+		//Channel.Tick();
 	}
 
 	//if (Channel.IsConnected())
