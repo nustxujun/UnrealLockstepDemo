@@ -48,7 +48,7 @@ ARenderBall::ARenderBall(const FObjectInitializer& ObjectInitializer)
 }
 
 
-void ARenderBall::OnFrame_Async(int FrameId)
+void ARenderBall::OnFrame(int FrameId)
 {
 	auto Ent = GetArxWorld().GetEntity(GetEntityId());
 	if (!Ent)

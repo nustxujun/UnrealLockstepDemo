@@ -59,20 +59,23 @@ public:
 	void Initialize(bool bIsReplicated) override
 	{
 		GetWorld().RegisterServerEvent(ArxServerEvent::PLAYER_ENTER, GetId());
-		//AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
-		//	ArxPlayerId PId = (ArxPlayerId)Param;
+		AddCallback(GetWorld(), ArxServerEvent::PLAYER_ENTER, [this](uint64 Event, uint64 Param) {
+			ArxPlayerId PId = (ArxPlayerId)Param;
 
-		//	CreateCharacter(PId, ArxTypeName<Ball>(), FString(TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C")));
+			CreateCharacter(PId,  FString(TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C")));
 
-		//	auto Actor = GetLinkedActor(PId);
-		//	auto Pawn = Cast<APawn>(Actor);
-		//	if (OnCreatePlayer)
-		//		OnCreatePlayer(PId, Pawn);
-		//});
+			GetWorld().RequestAccessInGameThread([PId,this](const ArxWorld& World){
+				auto Actor = GetLinkedActor(PId);
+				auto Pawn = Cast<APawn>(Actor);
+				if (OnCreatePlayer)
+					OnCreatePlayer(PId, Pawn);
+			});
+
+		});
 
 		if (!bIsReplicated)
 		{
-			const int Count = 100;
+			const int Count =100;
 			for (int i = 0; i < Count; ++i)
 			{ 
 				auto B = GetWorld().CreateEntity<Ball>(NON_PLAYER_CONTROL);
@@ -93,9 +96,9 @@ public:
 		OnReceiveEvent(From, Event, Param);
 	}
 
-	void CreateCharacter(ArxPlayerId PId, FName EntityType, FString ClassPath)
+	void CreateCharacter(ArxPlayerId PId, FString ClassPath)
 	{
-		auto Ent = GetWorld().CreateEntity(PId, EntityType);
+		auto Ent = GetWorld().CreateEntity<Ball>(PId);
 		auto Chara = static_cast<Ball*>(Ent);
 		Chara->bDamping = true;
 		Chara->CharacterBlueprint = ClassPath;
@@ -148,11 +151,11 @@ struct ClientPlayer : public ArxClientPlayer
 		InWorld.AddSystem<ArxRenderableSystem>();
 		InWorld.AddSystem<PlayerMgr>();
 
-		//InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
-		//	if (PId != Controller->Player->GetPlayerId())
-		//		return;
-		//	Controller->Possess(Pawn);
-		//};
+		InWorld.GetSystem< PlayerMgr>().OnCreatePlayer = [this](auto PId, auto Pawn){
+			if (PId != Controller->Player->GetPlayerId())
+				return;
+			Controller->Possess(Pawn);
+		};
 
 
 	}
@@ -369,6 +372,7 @@ void ALocalPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 #endif
 	Player.Reset();
+
 }
 
 bool ALocalPlayerController::IsServer()

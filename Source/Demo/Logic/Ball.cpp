@@ -14,12 +14,6 @@ Ball::Ball(ArxWorld& World, ArxEntityId Id)
 
 }
 
-void Ball::PhysicsWrapper::AddReferencedObjects(FReferenceCollector& Collector)
-{
-	if (RigidBody)
-		Collector.AddReferencedObject(RigidBody);
-}
-
 void Ball::Initialize(bool bIsReplicated)
 {
 	FWorldContext* WorldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport);
@@ -66,9 +60,7 @@ void Ball::Uninitialize(bool bIsReplicated)
 
 	}
 
-	if (Wrapper.RigidBody)
-		Wrapper.RigidBody->RemoveFromWorld();
-
+	Wrapper.RigidBody.Reset();
 	Wrapper.CollisionShape.Reset();
 
 	GetWorld().GetSystem<ArxRenderableSystem>().Unlink(GetId());

@@ -35,12 +35,10 @@ public:
 	REFLECT_END()
 
 public:
-    struct PhysicsWrapper: public FGCObject
+    struct PhysicsWrapper
     {
-		virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
-		URp3dRigidBody* RigidBody = nullptr;
+		TSharedPtr<class FRp3dRigidBody> RigidBody ;
 		TSharedPtr<Rp3dCollisionShape> CollisionShape ;
-		FString GetReferencerName()const{return TEXT("PhysicsBall"); }
     };
 
     PhysicsWrapper Wrapper;
