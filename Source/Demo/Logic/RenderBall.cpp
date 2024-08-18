@@ -112,7 +112,7 @@ void ARenderBall::Move()
 	//auto Ent = static_cast<Ball*>(GetEntity());
 	//Ent->Move(Vel);
 
-	Ball::Move_Async(GetArxWorld(), GetEntityId(), Vel);
+	Ball::Move_Static(GetArxWorld(), GetEntityId(), Vel);
 
 }
 
