@@ -26,13 +26,13 @@ void Ball::Initialize(bool bIsReplicated)
 	Wrapper.RigidBody = PhysicsSys.CreateRigidBody();
 	auto Collider = Wrapper.RigidBody->AddCollisionShape(Wrapper.CollisionShape);
 	Collider.SetBounciness(0.5);
-	Collider.SetFriction(0.1);
+	Collider.SetFriction(1);
 
 	Wrapper.RigidBody->UpdateMassPropertiesFromColliders();
 	//Wrapper.RigidBody->SetIsDebugEnabled(true);
 
 
-	auto Pos = FVector(-290.000000, -180.000000, 454.645386 + GetId() * 200 - 300);
+	auto Pos = FVector(-290.000000, -180.000000, 454.645386 + GetId()  - 300);
 	auto Rot = FRotator(0, 0, 90);
 	auto Trans = FTransform(Rot, Pos);
 	Wrapper.RigidBody->SetTransform(UE_TO_RP3D(Trans));

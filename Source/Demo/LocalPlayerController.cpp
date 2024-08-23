@@ -75,11 +75,11 @@ public:
 
 		if (!bIsReplicated)
 		{
-			const int Count =100;
+			const int Count =1000;
 			for (int i = 0; i < Count; ++i)
 			{ 
 				auto B = GetWorld().CreateEntity<Ball>(NON_PLAYER_CONTROL);
-				B->CharacterBlueprint = TEXT("/Game/Blueprints/RenderCharacter.RenderCharacter_C");
+				B->CharacterBlueprint = TEXT("/Game/Blueprints/Ball.Ball_C");
 				B->Spawn();
 
 			}
@@ -333,21 +333,6 @@ void ALocalPlayerController::BeginPlay()
 
 		});
 
-		//AsyncTask(ENamedThreads::AnyThread, [Self = TWeakObjectPtr<>(this), this]() {
-		//	auto Conn = FConnection::ConnectToHost(*NetConnection->URL.Host, Port, 10.0f, TEXT("Client"));
-		//	if (!Conn)
-		//	{
-		//		return;
-		//	}
-
-		//	AsyncTask(ENamedThreads::GameThread, [this, Conn](){
-		//		OnConnectClientSide(Conn);
-		//		Player->RequestRegister();
-
-
-		//	});
-
-		//});
 
 	}
 }

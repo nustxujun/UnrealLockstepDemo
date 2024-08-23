@@ -145,3 +145,23 @@ void ARenderBall::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 }
+
+
+ARenderBallActor::ARenderBallActor(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	SmoothComponent = CreateDefaultSubobject<UArxSmoothMoveComponent>(TEXT("SmoothMoveComponent"));
+}
+
+void ARenderBallActor::OnFrame(int FrameId)
+{
+	auto Ent = GetArxWorld().GetEntity(GetEntityId());
+	if (!Ent)
+		return;
+	check(Ent);
+	auto Char = static_cast<Ball*>(Ent);
+
+	auto& Trans = Char->GetTransform();
+
+	SmoothComponent->OnFrame(FrameId, RP3D_TO_UE(Trans));
+}

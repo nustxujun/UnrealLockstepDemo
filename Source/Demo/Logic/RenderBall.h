@@ -45,7 +45,19 @@ private:
 	void Move();
 private:
 	float Dirs[2] = {};
-    Rp3dTransform CachedTrans;
 	Rp3dVector3 MoveForwardValue = {};
 	Rp3dVector3 MoveRightValue = {};
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class ARenderBallActor: public AActor, public IArxRenderable
+{
+public:
+	GENERATED_UCLASS_BODY()
+
+private:
+	UPROPERTY()
+	class UArxSmoothMoveComponent* SmoothComponent;
+
+	virtual void OnFrame(int FrameId) override;
 };
