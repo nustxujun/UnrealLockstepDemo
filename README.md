@@ -1,7 +1,7 @@
 # UnrealLockstepDemo
 A 3d lockstep demo for UE.
 
-Here is the [Lockstep plugin for UE](https://github.com/nustxujun/UnrealLockstepDemo)
+Here is the [Lockstep plugin for UE](https://github.com/nustxujun/Arx)
 
 
 # Getting Started
