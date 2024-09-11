@@ -69,6 +69,8 @@ TSharedPtr<FConnection> FConnection::AcceptConnection(FSocket* Socket, float Tim
 	if (!Client)
 		return nullptr;
 
+	Client->SetNonBlocking(true);
+
 	return MakeShared<FConnection>(Client);
 }
 
